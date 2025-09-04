@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Detector Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --border-color: #e5e7eb;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-green: #22c55e;
+            --accent-amber: #f59e0b;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 1.5rem;
+        }
+        .dashboard-container {
+            max-width: 800px;
+            margin: auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        header p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .card-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        .analytics-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; /* Three equal columns */
+            align-items: center;
+            gap: 2rem;
+        }
+        .stats-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .stat-item .label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        #stat-blocked .value { color: var(--accent-red); }
+        #stat-proceeded .value { color: var(--accent-amber); }
+        #stat-legitimate .value { color: var(--accent-green); }
+        #stat-total .value { color: var(--text-primary); }
+        #stat-latency .value { color: var(--accent-blue); }
+        .chart-container {
+            max-width: 220px;
+            margin: auto;
+        }
+        .activity-table-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .activity-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .activity-table th, .activity-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+        .activity-table th {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .settings-form {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .settings-form input {
+            flex-grow: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .button-primary { background-color: var(--accent-blue); color: white; }
+        .button-secondary { background-color: var(--border-color); color: var(--text-primary); }
+        #whitelist { list-style: none; padding: 0; margin: 0; }
+        #whitelist li { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-radius: 0.5rem; }
+        #whitelist li:nth-child(odd) { background-color: var(--bg-color); }
+        #whitelist .remove-btn { background: none; border: none; color: var(--accent-red); cursor: pointer; font-weight: 600; }
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-secondary); }
+        /* Styles for the new Quick Test section */
+        .quick-test-form {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .quick-test-form input[type="text"] {
+            flex-grow: 1;
+        }
+        .quick-test-form select {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .quick-test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background-color: var(--bg-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header>
+            <p>Overview of your browsing protection activity.</p>
+        </header>
+
+        <!-- SECTION ORDER UPDATED -->
+
+        <!-- 1st Section: Analytics -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Analytics</h2>
+            </div>
+            <div class="analytics-content">
+                <!-- Column 1: Left -->
+                <div class="stats-column">
+                    <div class="stat-item" id="stat-total">
+                        <div class="value">0</div>
+                        <div class="label">Total URLs Scanned</div>
+                    </div>
+                    <div class="stat-item" id="stat-latency">
+                        <div class="value">0 ms</div>
+                        <div class="label">Avg. Latency</div>
+                    </div>
+                </div>
+                <!-- Column 2: Middle -->
+                <div class="stats-column">
+                    <div class="stat-item" id="stat-blocked">
+                        <div class="value">0</div>
+                        <div class="label">Phishing Blocked</div>
+                    </div>
+                    <div class="stat-item" id="stat-proceeded">
+                        <div class="value">0</div>
+                        <div class="label">Warnings Bypassed</div>
+                    </div>
+                    <div class="stat-item" id="stat-legitimate">
+                        <div class="value">0</div>
+                        <div class="label">Legitimate</div>
+                    </div>
+                </div>
+                <!-- Column 3: Right -->
+                <div class="chart-container">
+                    <canvas id="url-pie-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2nd Section: Quick Test URL -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Quick Test URL</h2>
+            </div>
+            <div class="quick-test-form">
+                <input type="text" id="quick-test-url" class="settings-form input" placeholder="Enter URL to test (e.g., http://fakebank.com/login)">
+                <select id="quick-test-gt">
+                    <option value="">Ground truth (optional)</option>
+                    <option value="phishing">Phishing</option>
+                    <option value="legitimate">Legitimate</option>
+                </select>
+                <button id="quick-test-btn" class="button button-primary">Predict</button>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.75rem; margin-bottom: 0;">
+                You can optionally provide ground-truth to update the dashboard's accuracy/F1 calculations.
+            </p>
+            <div id="quick-test-result" class="quick-test-result" style="display: none;">
+                <!-- Result will be shown here -->
+            </div>
+        </div>
+
+        <!-- 3rd Section: Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Recent Activity</h2>
+                <button class="button button-secondary" id="clear-history-btn">Clear History</button>
+            </div>
+            <div class="activity-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>URL</th>
+                            <th>Confidence</th>
+                            <th>Date & Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-log">
+                         <tr><td colspan="4" class="empty-state">No browsing activity has been logged yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4th Section: Settings -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Settings (Whitelist)</h2>
+            </div>
+            <p style="font-size: 0.875rem; color: var(--text-secondary); margin-top: -0.5rem; margin-bottom: 1rem;">
+                Add trusted domains (e.g., example.com) to bypass the scanner.
+            </p>
+            <div class="settings-form">
+                <input type="text" id="whitelist-input" placeholder="Enter domain to whitelist...">
+                <button class="button button-primary" id="add-whitelist-btn">Add</button>
+            </div>
+            <ul id="whitelist">
+            </ul>
+             <div id="empty-whitelist-state" class="empty-state">
+                <p>Your whitelist is empty.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
